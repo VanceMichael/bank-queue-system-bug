@@ -1,0 +1,64 @@
+# ===== 系统文件 =====
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ===== IDE / 编辑器 =====
+.idea/
+.vscode/
+*.iml
+*.sublime-*
+
+# ===== 日志 / 临时文件 =====
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
+
+# ===== 环境变量 =====
+.env
+.env.local
+.env.*.local
+*.env
+
+# ===== Backend (Go) =====
+backend/bin/
+backend/build/
+backend/dist/
+backend/*.exe
+backend/*.exe~
+backend/*.dll
+backend/*.so
+backend/*.dylib
+backend/*.test
+backend/*.out
+backend/vendor/
+backend/coverage.txt
+backend/main
+
+# ===== Frontend (Node / Vue / Vite) =====
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.cache/
+frontend/.parcel-cache/
+frontend/.vite/
+frontend/coverage/
+frontend/*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/.pnpm-store/
+
+# ===== Docker =====
+*.pid
+docker-compose.override.yml
+
+# ===== 其他 =====
+*.tgz
+*.tar.gz
