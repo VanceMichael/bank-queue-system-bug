@@ -5,6 +5,7 @@ import (
 	"bank-queue-system/models"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -123,7 +124,7 @@ func CallNextQueue(windowID string) (*models.QueueNumber, error) {
 		return nil, fmt.Errorf("window is already processing a queue")
 	}
 
-	var nextQueue *models.QueueNumber
+	var candidateQueues []*models.QueueNumber
 
 	for _, businessType := range window.BusinessTypes {
 		waitingKey := fmt.Sprintf("queue:waiting:%s", businessType)
@@ -139,19 +140,23 @@ func CallNextQueue(windowID string) (*models.QueueNumber, error) {
 			}
 
 			if queue.Status == models.QueueStatusWaiting {
-				nextQueue = queue
-				break
+				candidateQueues = append(candidateQueues, queue)
 			}
 		}
-
-		if nextQueue != nil {
-			break
-		}
 	}
 
-	if nextQueue == nil {
+	if len(candidateQueues) == 0 {
 		return nil, fmt.Errorf("no waiting queues")
 	}
+
+	sort.Slice(candidateQueues, func(i, j int) bool {
+		if candidateQueues[i].Priority != candidateQueues[j].Priority {
+			return candidateQueues[i].Priority > candidateQueues[j].Priority
+		}
+		return candidateQueues[i].CreatedAt.Before(candidateQueues[j].CreatedAt)
+	})
+
+	nextQueue := candidateQueues[0]
 
 	now := time.Now()
 	nextQueue.Status = models.QueueStatusCalling
@@ -229,6 +234,11 @@ func CompleteQueue(windowID string) error {
 		return err
 	}
 
+	err = RecordQueueCompletion(queue)
+	if err != nil {
+		return err
+	}
+
 	window.CurrentQueue = nil
 	window.LastActiveAt = &now
 	return UpdateWindow(window)
@@ -279,7 +289,7 @@ func RecallMissedQueue(queueID string) error {
 
 	waitingKey := fmt.Sprintf("queue:waiting:%s", queue.BusinessType)
 	return config.RedisClient.ZAdd(config.Ctx, waitingKey, &redis.Z{
-		Score:  float64(queue.Priority*1000000 + int(queue.CreatedAt.Unix())),
+		Score:  float64(int(queue.CreatedAt.Unix()) - queue.Priority*1000000),
 		Member: queue.ID,
 	}).Err()
 }
